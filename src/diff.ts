@@ -63,6 +63,7 @@ export function sortDiffResults(results: DiffResult[]) {
     if (a.project === b.project) {
       return a.configuration.localeCompare(b.configuration)
     } else {
+      // TODO: fix
       if (a.project === 'gradle-root-project') return -1
       if (b.project === 'gradle-root-project') return 1
       return a.project.localeCompare(b.project)

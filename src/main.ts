@@ -2,7 +2,6 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import * as path from 'path'
 import * as io from '@actions/io'
-import * as exec from '@actions/exec'
 
 import * as gradle from './gradle.js'
 import * as utils from './utils.js'
@@ -10,6 +9,7 @@ import * as diff from './diff.js'
 import { DiffResult, Inputs, RESULT_DIR_NAME, TempDirs } from './types.js'
 import * as reporter from './reporter.js'
 import { getOctokitHelper } from './octokitHelper.js'
+import { rootLogger } from "ts-jest";
 
 /**
  * The main function for the action.
@@ -24,12 +24,15 @@ export async function run(): Promise<void> {
       .map((it) => it.trim())
 
     // create temp directories
+    rootLogger.error('creating temp directories')
     const tempDirs = await createTempDirs()
 
     // download jar
+    rootLogger.error('downloading jar')
     const jarPath = await diff.downloadJar(inputs.toolVersion, tempDirs.root)
 
     // calculate diff
+    rootLogger.error('calculating diff')
     const diffResults = await calculateDiffResults(
       jarPath,
       configurations,
@@ -107,22 +110,6 @@ export async function createTempDirs(): Promise<TempDirs> {
 }
 
 // export for testing
-export async function cloneBaseRepository(
-  gitUrl: string,
-  baseRepoDir: string
-): Promise<void> {
-  await exec.exec('git', [
-    'clone',
-    '--depth',
-    '1',
-    '-b',
-    github.context.payload.pull_request?.base.ref,
-    gitUrl,
-    baseRepoDir
-  ])
-}
-
-// export for testing
 export async function calculateDiffResults(
   jarPath: string,
   configurations: string[],
@@ -132,8 +119,8 @@ export async function calculateDiffResults(
 ) {
   const diffResults: DiffResult[] = []
   for (const configuration of configurations) {
-    await gradle.generateDependenciesFiles(oldRepoDir, configuration)
-    await gradle.generateDependenciesFiles(newRepoDir, configuration)
+    await gradle.generateDependenciesFiles(configuration, oldRepoDir)
+    await gradle.generateDependenciesFiles(configuration, newRepoDir)
     const configurationDiffResults = await diff.calculateDiffResults(
       jarPath,
       configuration,

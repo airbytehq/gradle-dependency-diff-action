@@ -9,7 +9,7 @@ import * as diff from './diff.js'
 import { DiffResult, Inputs, RESULT_DIR_NAME, TempDirs } from './types.js'
 import * as reporter from './reporter.js'
 import { getOctokitHelper } from './octokitHelper.js'
-import { rootLogger } from "ts-jest";
+import { rootLogger } from 'ts-jest'
 
 /**
  * The main function for the action.
@@ -24,15 +24,15 @@ export async function run(): Promise<void> {
       .map((it) => it.trim())
 
     // create temp directories
-    rootLogger.error('creating temp directories')
+    core.info('creating temp directories')
     const tempDirs = await createTempDirs()
 
     // download jar
-    rootLogger.error('downloading jar')
+    core.info('downloading jar')
     const jarPath = await diff.downloadJar(inputs.toolVersion, tempDirs.root)
 
     // calculate diff
-    rootLogger.error('calculating diff')
+    core.info('calculating diff')
     const diffResults = await calculateDiffResults(
       jarPath,
       configurations,

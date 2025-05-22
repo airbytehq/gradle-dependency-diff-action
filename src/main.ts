@@ -132,8 +132,8 @@ export async function calculateDiffResults(
 ) {
   const diffResults: DiffResult[] = []
   for (const configuration of configurations) {
-    await gradle.generateDependenciesFiles(configuration, oldRepoDir)
-    await gradle.generateDependenciesFiles(configuration, newRepoDir)
+    await gradle.generateDependenciesFiles(oldRepoDir, configuration)
+    await gradle.generateDependenciesFiles(newRepoDir, configuration)
     const configurationDiffResults = await diff.calculateDiffResults(
       jarPath,
       configuration,

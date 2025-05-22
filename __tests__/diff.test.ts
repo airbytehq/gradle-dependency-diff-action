@@ -87,7 +87,6 @@ describe('diff.ts', () => {
       const configuration = 'configuration'
       const tempDirs: TempDirs = {
         root: '/temp',
-        baseRepo: '/temp/base-repo',
         result: '/temp/result'
       }
 
@@ -115,6 +114,8 @@ describe('diff.ts', () => {
       const result = await calculateDiffResults(
         jarPath,
         configuration,
+        'old',
+        'new',
         tempDirs
       )
 
@@ -138,7 +139,6 @@ describe('diff.ts', () => {
       const configuration = 'configuration'
       const tempDirs: TempDirs = {
         root: '/temp',
-        baseRepo: '/temp/base-repo',
         result: '/temp/result'
       }
 
@@ -150,6 +150,8 @@ describe('diff.ts', () => {
       const result = await calculateDiffResults(
         jarPath,
         configuration,
+        'old',
+        'new',
         tempDirs
       )
 

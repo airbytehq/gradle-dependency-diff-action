@@ -33799,12 +33799,13 @@ async function downloadJar(version, tempDir) {
     require$$0__default.writeFileSync(jarPath, buffer);
     return jarPath;
 }
-async function calculateDiffResults$1(jarPath, configuration, tempDirs) {
+async function calculateDiffResults$1(jarPath, configuration, oldRepoDir, newRepoDir, tempDirs) {
     const results = [];
     const globber = await globExports.create(path__default.join('**', 'build', 'reports', 'project', 'dependencies.txt'));
     for (const filePath of await globber.glob()) {
-        const oldFilePath = path__default.join(tempDirs.baseRepo, removePrefix$1(filePath, process.env.GITHUB_WORKSPACE + path__default.sep));
-        const result = await execDiff(jarPath, configuration, filePath, oldFilePath, tempDirs.result);
+        const oldFilePath = path__default.join(oldRepoDir, removePrefix$1(filePath, process.env.GITHUB_WORKSPACE + path__default.sep));
+        const newFilePath = path__default.join(newRepoDir, removePrefix$1(filePath, process.env.GITHUB_WORKSPACE + path__default.sep));
+        const result = await execDiff(jarPath, configuration, oldFilePath, newFilePath, tempDirs.result);
         if (result) {
             results.push(result);
         }
@@ -33817,6 +33818,7 @@ function sortDiffResults(results) {
             return a.configuration.localeCompare(b.configuration);
         }
         else {
+            // TODO: fix
             if (a.project === 'gradle-root-project')
                 return -1;
             if (b.project === 'gradle-root-project')
@@ -33825,12 +33827,12 @@ function sortDiffResults(results) {
         }
     });
 }
-async function execDiff(jarPath, configuration, filePath, oldFilePath, resultDir) {
+async function execDiff(jarPath, configuration, oldFilePath, newFilePath, resultDir) {
     if (!require$$0__default.existsSync(oldFilePath)) {
         return;
     }
-    const project = getProjectFromFile(filePath);
-    const output = await execExports.getExecOutput('java', ['-jar', jarPath, oldFilePath, filePath], { silent: true });
+    const project = getProjectFromFile(newFilePath);
+    const output = await execExports.getExecOutput('java', ['-jar', jarPath, oldFilePath, newFilePath], { silent: true });
     if (output.stdout) {
         const projectDir = project.split(':').filter((s) => s !== '');
         const filePath = path__default.join(resultDir, ...projectDir, `${configuration}.txt`);
@@ -33857,7 +33859,6 @@ function getProjectFromFile(filePath) {
     throw Error('Invalid dependencies.txt');
 }
 
-const BASE_REPO_DIR_NAME = 'base-repo';
 const RESULT_DIR_NAME = 'result';
 
 var artifact$1 = {};
@@ -209061,20 +209062,21 @@ function getOctokitHelper(octokit) {
  */
 async function run() {
     try {
+        coreExports.info('starting dependency diff action');
         // get input values
         const inputs = getInputs();
         const configurations = inputs.configurations
             .split(',')
             .map((it) => it.trim());
         // create temp directories
+        coreExports.info('creating temp directories');
         const tempDirs = await createTempDirs();
-        // clone base repository
-        const gitUrl = getGitUrl(inputs.token);
-        await cloneBaseRepository(gitUrl, tempDirs.baseRepo);
         // download jar
+        coreExports.info('downloading jar');
         const jarPath = await downloadJar(inputs.toolVersion, tempDirs.root);
         // calculate diff
-        const diffResults = await calculateDiffResults(jarPath, configurations, tempDirs);
+        coreExports.info('calculating diff');
+        const diffResults = await calculateDiffResults(jarPath, configurations, inputs.oldRepoDir, inputs.newRepoDir, tempDirs);
         const html = generateHtmlReport(diffResults, tempDirs.result);
         const octokit = githubExports.getOctokit(inputs.token, {
             baseUrl: githubExports.context.apiUrl
@@ -209112,6 +209114,8 @@ function getInputs() {
     return {
         configurations: coreExports.getInput('configurations'),
         token: coreExports.getInput('token'),
+        oldRepoDir: coreExports.getInput('old-repo-dir'),
+        newRepoDir: coreExports.getInput('new-repo-dir'),
         toolVersion: coreExports.getInput('tool-version'),
         postPrComment: coreExports.getBooleanInput('post-pr-comment'),
         updatePrBody: coreExports.getBooleanInput('update-pr-body'),
@@ -209125,47 +209129,20 @@ function getInputs() {
 // export for testing
 async function createTempDirs() {
     const tempDir = await createTempDirectory();
-    const baseRepo = path$2.join(tempDir, BASE_REPO_DIR_NAME);
     const result = path$2.join(tempDir, RESULT_DIR_NAME);
-    await ioExports.mkdirP(baseRepo);
     await ioExports.mkdirP(result);
     return {
         root: tempDir,
-        baseRepo: baseRepo,
         result: result
     };
 }
 // export for testing
-function getGitUrl(token) {
-    const url = new URL(githubExports.context.serverUrl);
-    if (token.startsWith('ghp_')) {
-        url.username = token;
-    }
-    else {
-        url.username = 'x-access-token';
-        url.password = token;
-    }
-    return `${url.toString()}${githubExports.context.repo.owner}/${githubExports.context.repo.repo}`;
-}
-// export for testing
-async function cloneBaseRepository(gitUrl, baseRepoDir) {
-    await execExports.exec('git', [
-        'clone',
-        '--depth',
-        '1',
-        '-b',
-        githubExports.context.payload.pull_request?.base.ref,
-        gitUrl,
-        baseRepoDir
-    ]);
-}
-// export for testing
-async function calculateDiffResults(jarPath, configurations, tempDirs) {
+async function calculateDiffResults(jarPath, configurations, oldRepoDir, newRepoDir, tempDirs) {
     const diffResults = [];
     for (const configuration of configurations) {
-        await generateDependenciesFiles(configuration);
-        await generateDependenciesFiles(configuration, tempDirs.baseRepo);
-        const configurationDiffResults = await calculateDiffResults$1(jarPath, configuration, tempDirs);
+        await generateDependenciesFiles(configuration, oldRepoDir);
+        await generateDependenciesFiles(configuration, newRepoDir);
+        const configurationDiffResults = await calculateDiffResults$1(jarPath, configuration, oldRepoDir, newRepoDir, tempDirs);
         diffResults.push(...configurationDiffResults);
     }
     return sortDiffResults(diffResults);

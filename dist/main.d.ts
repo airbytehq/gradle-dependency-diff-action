@@ -5,6 +5,4 @@ import { DiffResult, TempDirs } from './types.js';
  */
 export declare function run(): Promise<void>;
 export declare function createTempDirs(): Promise<TempDirs>;
-export declare function getGitUrl(token: string): string;
-export declare function cloneBaseRepository(gitUrl: string, baseRepoDir: string): Promise<void>;
-export declare function calculateDiffResults(jarPath: string, configurations: string[], tempDirs: TempDirs): Promise<DiffResult[]>;
+export declare function calculateDiffResults(jarPath: string, configurations: string[], oldRepoDir: string, newRepoDir: string, tempDirs: TempDirs): Promise<DiffResult[]>;

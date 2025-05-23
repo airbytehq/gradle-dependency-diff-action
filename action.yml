@@ -20,6 +20,17 @@ inputs:
       separated by commas.'
     required: false
     default: 'runtimeClasspath'
+  old-repo-dir:
+    description:
+      'The location within the workspace holding the base version of the repo.'
+    required: false
+    default: 'old'
+  new-repo-dir:
+    description:
+      'The location within the workspace holding the updated version of the
+      repo.'
+    required: false
+    default: 'new'
   post-pr-comment:
     description:
       'If true, posts a PR comment when there are dependency differences.'

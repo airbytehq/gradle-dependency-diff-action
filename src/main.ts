@@ -9,7 +9,6 @@ import * as diff from './diff.js'
 import { DiffResult, Inputs, RESULT_DIR_NAME, TempDirs } from './types.js'
 import * as reporter from './reporter.js'
 import { getOctokitHelper } from './octokitHelper.js'
-import { rootLogger } from 'ts-jest'
 
 /**
  * The main function for the action.
@@ -17,6 +16,7 @@ import { rootLogger } from 'ts-jest'
  */
 export async function run(): Promise<void> {
   try {
+    core.info('starting dependency diff action')
     // get input values
     const inputs = getInputs()
     const configurations = inputs.configurations

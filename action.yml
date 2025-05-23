@@ -27,7 +27,8 @@ inputs:
     default: 'old'
   new-repo-dir:
     description:
-      'The location within the workspace holding the updated version of the repo.'
+      'The location within the workspace holding the updated version of the
+      repo.'
     required: false
     default: 'new'
   post-pr-comment:
